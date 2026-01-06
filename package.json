@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "mkdir -p public/gs-wasm && cp node_modules/@zfanta/ghostscript-wasm/dist/gs.js public/gs-wasm/ && cp node_modules/@zfanta/ghostscript-wasm/dist/gs.wasm public/gs-wasm/"
   },
   "dependencies": {
     "react": "19.2.3",

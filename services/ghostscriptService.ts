@@ -76,7 +76,8 @@ async function loadGhostscript(): Promise<GhostscriptModule> {
       // Load it as a script tag instead
 
       const script = document.createElement("script");
-      script.src = "/node_modules/@zfanta/ghostscript-wasm/dist/gs.js";
+      // Use public folder for production (Vercel) compatibility
+      script.src = "/gs-wasm/gs.js";
 
       // Wait for script to load
       await new Promise<void>((resolve, reject) => {
@@ -110,7 +111,7 @@ async function loadGhostscript(): Promise<GhostscriptModule> {
       const module = await moduleFactory({
         locateFile: (path: string) => {
           if (path.endsWith(".wasm")) {
-            return "/node_modules/@zfanta/ghostscript-wasm/dist/" + path;
+            return "/gs-wasm/" + path;
           }
           return path;
         },
