@@ -23,7 +23,8 @@
     "papaparse": "5.4.1",
     "clsx": "2.1.0",
     "react-json-view": "1.21.3",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "@zfanta/ghostscript-wasm": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

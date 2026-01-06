@@ -17,6 +17,7 @@ export type ToolId =
   | "dashboard"
   | "pdf-merge"
   | "pdf-split"
+  | "pdf-compress"
   | "img-to-pdf"
   | "img-compress"
   | "img-editor"
@@ -60,6 +61,13 @@ export const NAV_ITEMS: NavItem[] = [
     path: "/pdf-split",
     label: "Split PDF",
     icon: <Scissors size={18} />,
+    category: "PDF Tools",
+  },
+  {
+    id: "pdf-compress",
+    path: "/pdf-compress",
+    label: "Compress PDF",
+    icon: <Minimize2 size={18} />,
     category: "PDF Tools",
   },
   {

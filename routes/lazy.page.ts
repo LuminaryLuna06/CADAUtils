@@ -27,6 +27,9 @@ const lazy = (componentImport: () => Promise<any>) =>
 export const Dashboard = lazy(() => import("../pages/Dashboard"));
 export const PdfMerge = lazy(() => import("../components/tools/PdfMerge"));
 export const PdfSplit = lazy(() => import("../components/tools/PdfSplit"));
+export const PdfCompress = lazy(
+  () => import("../components/tools/PdfCompress")
+);
 export const ImageToPdf = lazy(() => import("../components/tools/ImageToPdf"));
 export const ImageCompress = lazy(
   () => import("../components/tools/ImageCompress")

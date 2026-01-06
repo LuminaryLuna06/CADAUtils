@@ -12,6 +12,7 @@ const AppRoutes: React.FC = () => {
         {/* PDF Tools */}
         <Route path="/pdf-merge" element={<Pages.PdfMerge />} />
         <Route path="/pdf-split" element={<Pages.PdfSplit />} />
+        <Route path="/pdf-compress" element={<Pages.PdfCompress />} />
         <Route path="/img-to-pdf" element={<Pages.ImageToPdf />} />
 
         {/* Image Tools */}
