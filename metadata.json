@@ -1,0 +1,5 @@
+{
+  "name": "CadaUtils",
+  "description": "A comprehensive suite of client-side PDF and Image manipulation tools including merging, splitting, compression, and cropping.",
+  "requestFramePermissions": []
+}

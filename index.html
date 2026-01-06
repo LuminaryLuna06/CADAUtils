@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebToolkit - PDF & Image Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://unpkg.com/react-image-crop@11.0.5/dist/ReactCrop.css"
+      rel="stylesheet"
+    />
+    <!-- Use unpkg for CSS to ensure valid stylesheet MIME type -->
+    <link
+      href="https://unpkg.com/@mantine/core@7.6.1/styles.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      // Polyfill for libraries that expect Node.js process.env
+      window.process = { env: { NODE_ENV: "production" } };
+
+      tailwind.config = {
+        darkMode: ["class", '[data-mantine-color-scheme="dark"]'],
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              slate: {
+                850: "#151b28",
+                900: "#0f172a",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #f8fafc;
+        color: #0f172a;
+      }
+      [data-mantine-color-scheme="dark"] body {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+      [data-mantine-color-scheme="dark"] ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      [data-mantine-color-scheme="dark"] ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+    </style>
+
+    <!-- Switch to React 18 and specific versions to prevent version conflicts -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.2.0",
+          "react/": "https://esm.sh/react@18.2.0/",
+          "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+          "react-dom": "https://esm.sh/react-dom@18.2.0",
+          "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
+          "@mantine/core": "https://esm.sh/@mantine/core@7.6.1?deps=react@18.2.0,react-dom@18.2.0",
+          "@mantine/hooks": "https://esm.sh/@mantine/hooks@7.6.1?deps=react@18.2.0",
+          "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
+          "react-image-crop": "https://esm.sh/react-image-crop@11.0.5?deps=react@18.2.0",
+          "browser-image-compression": "https://esm.sh/browser-image-compression@2.0.2",
+          "pdf-lib": "https://esm.sh/pdf-lib@1.17.1",
+          "qrcode": "https://esm.sh/qrcode@1.5.3",
+          "js-yaml": "https://esm.sh/js-yaml@4.1.0",
+          "papaparse": "https://esm.sh/papaparse@5.4.1",
+          "clsx": "https://esm.sh/clsx@2.1.0",
+          "react-json-view": "https://esm.sh/react-json-view@1.21.3?deps=react@18.2.0,react-dom@18.2.0",
+          "jszip": "https://esm.sh/jszip@3.10.1",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
