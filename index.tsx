@@ -1,8 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "./index.css";
 import { MantineProvider, createTheme } from "@mantine/core";
 import "@mantine/core/styles.css";
-
+import "react-image-crop/dist/ReactCrop.css";
 import App from "./App";
 
 const rootElement = document.getElementById("root");
