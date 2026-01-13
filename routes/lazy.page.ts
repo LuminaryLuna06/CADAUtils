@@ -52,3 +52,4 @@ export const DataConverter = lazy(
 export const WordCounter = lazy(
   () => import("../components/tools/WordCounter")
 );
+export const License = lazy(() => import("../pages/License"));

@@ -14,6 +14,9 @@ import {
   Undo2,
   Image as ImageIcon,
   Upload,
+  Palette,
+  RotateCw,
+  RotateCcw,
 } from "lucide-react";
 import {
   Button,
@@ -27,12 +30,29 @@ import {
   SegmentedControl,
   Badge,
   Overlay,
+  ColorInput,
 } from "@mantine/core";
 import FileUpload from "../ui/FileUpload";
-import { resizeImage, cropImageCanvas } from "../../services/imageService";
+import {
+  resizeImage,
+  cropImageCanvas,
+  applyImageStyle,
+  type ImageStyleOptions,
+} from "../../services/imageService";
 import { downloadBlob } from "../../services/pdfService";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
-type EditorMode = "resize" | "crop";
+type EditorMode = "resize" | "crop" | "style";
+
+interface HistoryEntry {
+  url: string;
+  style: {
+    rotation: number;
+    borderRadius: number;
+    backgroundColor: string;
+    padding: number;
+  };
+}
 
 function centerAspectCrop(
   mediaWidth: number,
@@ -52,12 +72,14 @@ function centerAspectCrop(
 }
 
 const ImageEditor: React.FC = () => {
+  const { settings } = useSettingsContext();
   const [file, setFile] = useState<File | null>(null);
   const [originalSrc, setOriginalSrc] = useState<string>("");
   const [currentSrc, setCurrentSrc] = useState<string>("");
+  const [styleBaseSrc, setStyleBaseSrc] = useState<string>(""); // source used for styling (crop/resize applied, style not compounded)
   const [mode, setMode] = useState<EditorMode>("resize");
   const [processing, setProcessing] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // Resize State
   const [width, setWidth] = useState<number>(0);
@@ -77,6 +99,15 @@ const ImageEditor: React.FC = () => {
   const imgRef = useRef<HTMLImageElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  // Style State
+  const [rotation, setRotation] = useState(0);
+  const [borderRadius, setBorderRadius] = useState(0);
+  const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
+  const [padding, setPadding] = useState(0);
+
+  // Ref to prevent duplicate style applications
+  const isApplyingStyle = useRef(false);
+
   // Initialize image
   const onFileSelected = (files: File[]) => {
     if (files.length > 0) {
@@ -85,7 +116,18 @@ const ImageEditor: React.FC = () => {
       const url = URL.createObjectURL(selectedFile);
       setOriginalSrc(url);
       setCurrentSrc(url);
-      setHistory([url]);
+      setStyleBaseSrc(url);
+      setHistory([
+        {
+          url,
+          style: {
+            rotation: 0,
+            borderRadius: 0,
+            backgroundColor: "#FFFFFF",
+            padding: 0,
+          },
+        },
+      ]);
     }
   };
 
@@ -163,7 +205,7 @@ const ImageEditor: React.FC = () => {
       );
       const newUrl = URL.createObjectURL(resizedBlob);
 
-      updateImageState(newUrl);
+      updateImageState(newUrl, { updateStyleBase: true });
     } catch (error) {
       console.error(error);
       alert("Resize failed");
@@ -197,7 +239,7 @@ const ImageEditor: React.FC = () => {
         file.type
       );
       const newUrl = URL.createObjectURL(blob);
-      updateImageState(newUrl);
+      updateImageState(newUrl, { updateStyleBase: true });
 
       // Switch back to free form or reset visual crop
       setCrop(undefined);
@@ -210,28 +252,128 @@ const ImageEditor: React.FC = () => {
     }
   };
 
+  // --- Style Logic ---
+  const adjustRotation = (delta: number) => {
+    setRotation((prev) => {
+      const next = (prev + delta) % 360;
+      return next < 0 ? next + 360 : next;
+    });
+  };
+
+  const applyStyle = async () => {
+    if (!file || isApplyingStyle.current) return;
+
+    isApplyingStyle.current = true;
+    setProcessing(true);
+    try {
+      // Apply style on the latest non-styled image to avoid compounding rotations/styles
+      // Prefer styleBaseSrc (set after crop/resize/reset/file change); fallback to original
+      const baseSrc = styleBaseSrc || originalSrc;
+      const response = await fetch(baseSrc);
+      const blob = await response.blob();
+      const currentFile = new File([blob], file.name, { type: file.type });
+
+      const styledBlob = await applyImageStyle(currentFile, {
+        rotation,
+        borderRadius,
+        backgroundColor,
+        padding,
+      });
+      const newUrl = URL.createObjectURL(styledBlob);
+
+      updateImageState(newUrl);
+    } catch (error) {
+      console.error(error);
+      alert("Style application failed");
+    } finally {
+      setProcessing(false);
+      isApplyingStyle.current = false;
+    }
+  };
+
+  // Auto-apply style when in style mode and values change
+  useEffect(() => {
+    if (mode === "style" && file && originalSrc && !isApplyingStyle.current) {
+      // Only apply if at least one style value is non-default
+      // This prevents creating duplicate history entry on mode switch
+
+      // Check if current style values match the last history entry
+      const lastEntry = history[history.length - 1];
+      if (
+        lastEntry &&
+        lastEntry.style.rotation === rotation &&
+        lastEntry.style.borderRadius === borderRadius &&
+        lastEntry.style.backgroundColor === backgroundColor &&
+        lastEntry.style.padding === padding
+      ) {
+        return; // Skip if same as last entry
+      }
+
+      applyStyle();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rotation, borderRadius, backgroundColor, padding]);
+
   // --- Shared Logic ---
-  const updateImageState = (newUrl: string) => {
+  const updateImageState = (
+    newUrl: string,
+    options: { updateStyleBase?: boolean } = {}
+  ) => {
     setCurrentSrc(newUrl);
-    setHistory((prev) => [...prev, newUrl]);
+    if (options.updateStyleBase) {
+      setStyleBaseSrc(newUrl);
+    }
+    setHistory((prev) => [
+      ...prev,
+      {
+        url: newUrl,
+        style: { rotation, borderRadius, backgroundColor, padding },
+      },
+    ]);
   };
 
   const handleUndo = () => {
     if (history.length > 1) {
       const newHistory = [...history];
       newHistory.pop(); // Remove current
-      const prevUrl = newHistory[newHistory.length - 1];
-      setCurrentSrc(prevUrl);
+      const prevEntry = newHistory[newHistory.length - 1];
+      setCurrentSrc(prevEntry.url);
       setHistory(newHistory);
+
+      // Restore style state from history
+      setRotation(prevEntry.style.rotation);
+      setBorderRadius(prevEntry.style.borderRadius);
+      setBackgroundColor(prevEntry.style.backgroundColor);
+      setPadding(prevEntry.style.padding);
+
+      // Align style base with the reverted image to prevent compounding
+      setStyleBaseSrc(prevEntry.url);
     }
   };
 
   const handleReset = () => {
     setCurrentSrc(originalSrc);
-    setHistory([originalSrc]);
+    setStyleBaseSrc(originalSrc);
+    setHistory([
+      {
+        url: originalSrc,
+        style: {
+          rotation: 0,
+          borderRadius: 0,
+          backgroundColor: "#FFFFFF",
+          padding: 0,
+        },
+      },
+    ]);
     setPercentage(100);
     setCrop(undefined);
     setCompletedCrop(undefined);
+
+    // Reset style controls to default
+    setRotation(0);
+    setBorderRadius(0);
+    setBackgroundColor("#FFFFFF");
+    setPadding(0);
   };
 
   const handleDownload = () => {
@@ -287,6 +429,7 @@ const ImageEditor: React.FC = () => {
               data={[
                 { label: "Resize", value: "resize" },
                 { label: "Crop", value: "crop" },
+                { label: "Style", value: "style" },
               ]}
             />
           </Paper>
@@ -299,8 +442,8 @@ const ImageEditor: React.FC = () => {
           >
             {!file && (
               <Overlay
-                color="#fff"
-                backgroundOpacity={0.5}
+                // color="#fff"
+                backgroundOpacity={0.1}
                 blur={2}
                 zIndex={10}
                 className="flex items-center justify-center"
@@ -313,7 +456,12 @@ const ImageEditor: React.FC = () => {
 
             {mode === "resize" && (
               <Stack gap="lg">
-                <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400 font-medium pb-2 border-b border-slate-100 dark:border-slate-700">
+                <div
+                  className="flex items-center gap-2 font-medium pb-2 border-b border-slate-100 dark:border-slate-700"
+                  style={{
+                    color: `var(--mantine-color-${settings.primaryColor}-6)`,
+                  }}
+                >
                   <Maximize2 size={20} />
                   <span>Resize Options</span>
                 </div>
@@ -368,7 +516,10 @@ const ImageEditor: React.FC = () => {
                 <Checkbox
                   label="Lock Aspect Ratio"
                   checked={lockAspect}
-                  onChange={(e) => setLockAspect(e.currentTarget.checked)}
+                  onChange={(e) => {
+                    const checked = e.currentTarget.checked;
+                    setLockAspect(checked);
+                  }}
                   disabled={!file}
                 />
 
@@ -387,7 +538,12 @@ const ImageEditor: React.FC = () => {
 
             {mode === "crop" && (
               <Stack gap="lg">
-                <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400 font-medium pb-2 border-b border-slate-100 dark:border-slate-700">
+                <div
+                  className="flex items-center gap-2 font-medium pb-2 border-b border-slate-100 dark:border-slate-700"
+                  style={{
+                    color: `var(--mantine-color-${settings.primaryColor}-6)`,
+                  }}
+                >
                   <CropIcon size={20} />
                   <span>Crop Options</span>
                 </div>
@@ -402,7 +558,11 @@ const ImageEditor: React.FC = () => {
                       onClick={() => handleAspectClick(undefined)}
                       fullWidth
                       justify="start"
-                      color={cropAspect === undefined ? undefined : "gray"}
+                      color={
+                        cropAspect === undefined
+                          ? settings.primaryColor
+                          : "gray"
+                      }
                       disabled={!file}
                     >
                       Free Form
@@ -412,7 +572,7 @@ const ImageEditor: React.FC = () => {
                       onClick={() => handleAspectClick(1)}
                       fullWidth
                       justify="start"
-                      color={cropAspect === 1 ? undefined : "gray"}
+                      color={cropAspect === 1 ? settings.primaryColor : "gray"}
                       disabled={!file}
                     >
                       Square (1:1)
@@ -422,7 +582,9 @@ const ImageEditor: React.FC = () => {
                       onClick={() => handleAspectClick(16 / 9)}
                       fullWidth
                       justify="start"
-                      color={cropAspect === 16 / 9 ? undefined : "gray"}
+                      color={
+                        cropAspect === 16 / 9 ? settings.primaryColor : "gray"
+                      }
                       disabled={!file}
                     >
                       Landscape (16:9)
@@ -432,7 +594,9 @@ const ImageEditor: React.FC = () => {
                       onClick={() => handleAspectClick(4 / 3)}
                       fullWidth
                       justify="start"
-                      color={cropAspect === 4 / 3 ? undefined : "gray"}
+                      color={
+                        cropAspect === 4 / 3 ? settings.primaryColor : "gray"
+                      }
                       disabled={!file}
                     >
                       Standard (4:3)
@@ -454,6 +618,172 @@ const ImageEditor: React.FC = () => {
                 >
                   Crop Selection
                 </Button>
+              </Stack>
+            )}
+
+            {mode === "style" && (
+              <Stack gap="lg">
+                <div
+                  className="flex items-center gap-2 font-medium pb-2 border-b border-slate-100 dark:border-slate-700"
+                  style={{
+                    color: `var(--mantine-color-${settings.primaryColor}-6)`,
+                  }}
+                >
+                  <Palette size={20} />
+                  <span>Style Options</span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Text size="sm" fw={500}>
+                      Rotation
+                    </Text>
+                    <Badge color="gray" variant="light">
+                      {rotation}°
+                    </Badge>
+                  </div>
+                  <Group grow>
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => adjustRotation(-90)}
+                      disabled={!file}
+                      leftSection={
+                        <RotateCw size={14} className="rotate-180" />
+                      }
+                    >
+                      -90°
+                    </Button>
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => adjustRotation(90)}
+                      disabled={!file}
+                      leftSection={<RotateCw size={14} />}
+                    >
+                      +90°
+                    </Button>
+                  </Group>
+                </div>
+
+                <div>
+                  <Text size="sm" fw={500} mb="xs">
+                    Border Radius
+                  </Text>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={borderRadius === 0 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setBorderRadius(0)}
+                      disabled={!file}
+                      color={
+                        borderRadius === 0 ? settings.primaryColor : "gray"
+                      }
+                    >
+                      0%
+                    </Button>
+                    <Button
+                      variant={borderRadius === 10 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setBorderRadius(10)}
+                      disabled={!file}
+                      color={
+                        borderRadius === 10 ? settings.primaryColor : "gray"
+                      }
+                    >
+                      10%
+                    </Button>
+                    <Button
+                      variant={borderRadius === 25 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setBorderRadius(25)}
+                      disabled={!file}
+                      color={
+                        borderRadius === 25 ? settings.primaryColor : "gray"
+                      }
+                    >
+                      25%
+                    </Button>
+                    <Button
+                      variant={borderRadius === 50 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setBorderRadius(50)}
+                      disabled={!file}
+                      color={
+                        borderRadius === 50 ? settings.primaryColor : "gray"
+                      }
+                    >
+                      50%
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Text size="sm" fw={500} mb="xs">
+                    Background Color
+                  </Text>
+                  <ColorInput
+                    value={backgroundColor}
+                    onChange={setBackgroundColor}
+                    format="hex"
+                    disabled={!file}
+                    placeholder="transparent"
+                    swatches={[
+                      "transparent",
+                      "#FFFFFF",
+                      "#000000",
+                      "#F0F0F0",
+                      "#3B82F6",
+                      "#EF4444",
+                      "#10B981",
+                      "#F59E0B",
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <Text size="sm" fw={500} mb="xs">
+                    Padding
+                  </Text>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={padding === 0 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setPadding(0)}
+                      disabled={!file}
+                      color={padding === 0 ? settings.primaryColor : "gray"}
+                    >
+                      0 px
+                    </Button>
+                    <Button
+                      variant={padding === 10 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setPadding(10)}
+                      disabled={!file}
+                      color={padding === 10 ? settings.primaryColor : "gray"}
+                    >
+                      10 px
+                    </Button>
+                    <Button
+                      variant={padding === 25 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setPadding(25)}
+                      disabled={!file}
+                      color={padding === 25 ? settings.primaryColor : "gray"}
+                    >
+                      25 px
+                    </Button>
+                    <Button
+                      variant={padding === 50 ? "filled" : "light"}
+                      size="sm"
+                      onClick={() => setPadding(50)}
+                      disabled={!file}
+                      color={padding === 50 ? settings.primaryColor : "gray"}
+                    >
+                      50 px
+                    </Button>
+                  </div>
+                </div>
               </Stack>
             )}
           </Paper>
@@ -520,7 +850,7 @@ const ImageEditor: React.FC = () => {
                     alt="Edit"
                     src={currentSrc}
                     onLoad={onImageLoad}
-                    className="max-h-[calc(100vh-250px)] max-w-full object-contain shadow-2xl rounded-lg"
+                    className="max-h-[calc(100vh-250px)] max-w-full object-contain shadow-2xl"
                   />
                 )}
               </div>

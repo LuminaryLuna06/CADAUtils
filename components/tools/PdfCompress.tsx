@@ -27,9 +27,14 @@ import {
   QUALITY_PRESETS,
   isGhostscriptSupported,
 } from "../../services/ghostscriptService";
-import { downloadBlob } from "../../services/pdfService";
+import {
+  downloadBlob,
+  estimateCompressedSize,
+} from "../../services/pdfService";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
 const PdfCompress: React.FC = () => {
+  const { settings } = useSettingsContext();
   const [file, setFile] = useState<File | null>(null);
   const [quality, setQuality] = useState<CompressionQuality>("ebook");
   const [processing, setProcessing] = useState(false);
@@ -167,7 +172,7 @@ const PdfCompress: React.FC = () => {
                     { label: "Printer", value: "printer" },
                     { label: "Prepress", value: "prepress" },
                   ]}
-                  color="pink"
+                  color={settings.primaryColor}
                 />
                 <Paper
                   p="sm"
@@ -183,9 +188,18 @@ const PdfCompress: React.FC = () => {
                   <Text size="xs" c="dimmed">
                     {selectedPreset.description}
                   </Text>
-                  <Badge size="xs" mt={6} variant="light" color="blue">
-                    Expected: {selectedPreset.compression}
-                  </Badge>
+                  <Group mt={6} gap="xs">
+                    <Badge size="xs" variant="light" color="blue">
+                      Expected: {selectedPreset.compression}
+                    </Badge>
+                    <Badge size="xs" variant="light" color="green">
+                      Est. Size:{" "}
+                      {(
+                        estimateCompressedSize(file.size, quality) / 1024
+                      ).toFixed(2)}{" "}
+                      KB
+                    </Badge>
+                  </Group>
                 </Paper>
               </div>
 
@@ -211,7 +225,11 @@ const PdfCompress: React.FC = () => {
                       {progress}%
                     </Text>
                   </div>
-                  <Progress value={progress} color="pink" animated />
+                  <Progress
+                    value={progress}
+                    color={settings.primaryColor}
+                    animated
+                  />
                   <Text size="xs" c="dimmed" mt={4}>
                     This may take a few seconds...
                   </Text>
@@ -229,7 +247,7 @@ const PdfCompress: React.FC = () => {
                 loading={processing}
                 disabled={processing}
                 fullWidth
-                color="pink"
+                color={settings.primaryColor}
                 leftSection={<Minimize2 size={18} />}
               >
                 {processing ? "Compressing..." : "Compress PDF"}

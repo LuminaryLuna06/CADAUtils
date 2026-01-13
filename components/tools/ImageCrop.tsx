@@ -1,11 +1,14 @@
 import React, { useState, useRef } from "react";
 import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
 import { Crop as CropIcon, Download, RefreshCw, Loader2 } from "lucide-react";
+import { Button } from "@mantine/core";
 import FileUpload from "../ui/FileUpload";
 import { cropImageCanvas } from "../../services/imageService";
 import { downloadBlob } from "../../services/pdfService";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
 const ImageCrop: React.FC = () => {
+  const { settings } = useSettingsContext();
   const [file, setFile] = useState<File | null>(null);
   const [imgSrc, setImgSrc] = useState("");
   const [crop, setCrop] = useState<Crop>();
@@ -67,35 +70,37 @@ const ImageCrop: React.FC = () => {
           <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
               <CropIcon
-                className="text-pink-600 dark:text-pink-400"
                 size={20}
+                style={{
+                  color: `var(--mantine-color-${settings.primaryColor}-6)`,
+                }}
               />
               <span className="font-medium text-slate-700 dark:text-slate-200">
                 Adjust Selection
               </span>
             </div>
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="default"
                 onClick={() => {
                   setFile(null);
                   setImgSrc("");
                 }}
-                className="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2"
+                leftSection={<RefreshCw size={16} />}
+                size="sm"
               >
-                <RefreshCw size={16} /> Reset
-              </button>
-              <button
+                Reset
+              </Button>
+              <Button
                 onClick={handleDownloadCrop}
                 disabled={!completedCrop || processing}
-                className="px-4 py-1.5 text-sm bg-pink-600 hover:bg-pink-500 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={processing}
+                color={settings.primaryColor}
+                leftSection={!processing && <Download size={16} />}
+                size="sm"
               >
-                {processing ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Download size={16} />
-                )}
                 Download Crop
-              </button>
+              </Button>
             </div>
           </div>
 

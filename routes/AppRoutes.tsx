@@ -25,6 +25,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/json-beauty" element={<Pages.JsonBeautifier />} />
         <Route path="/data-convert" element={<Pages.DataConverter />} />
         <Route path="/word-count" element={<Pages.WordCounter />} />
+
+        {/* General */}
+        <Route path="/license" element={<Pages.License />} />
       </Route>
     </Routes>
   );

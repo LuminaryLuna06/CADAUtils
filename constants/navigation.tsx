@@ -11,6 +11,7 @@ import {
   FileJson,
   Type,
   Wrench,
+  BookOpen,
 } from "lucide-react";
 
 export type ToolId =
@@ -25,7 +26,8 @@ export type ToolId =
   | "qr-generator"
   | "json-beauty"
   | "data-convert"
-  | "word-count";
+  | "word-count"
+  | "license";
 
 export interface NavItem {
   id: ToolId;
@@ -38,6 +40,7 @@ export interface NavItem {
     | "Data Tools"
     | "Text Tools"
     | "General";
+  pin?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -47,6 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     icon: <Wrench size={18} />,
     category: "General",
+    pin: false,
   },
 
   {
@@ -55,6 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Merge PDF",
     icon: <Files size={18} />,
     category: "PDF Tools",
+    pin: true,
   },
   {
     id: "pdf-split",
@@ -62,6 +67,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Split PDF",
     icon: <Scissors size={18} />,
     category: "PDF Tools",
+    pin: true,
   },
   {
     id: "pdf-compress",
@@ -69,6 +75,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Compress PDF",
     icon: <Minimize2 size={18} />,
     category: "PDF Tools",
+    pin: true,
   },
   {
     id: "img-to-pdf",
@@ -76,6 +83,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Image to PDF",
     icon: <ImageIcon size={18} />,
     category: "PDF Tools",
+    pin: true,
   },
 
   {
@@ -84,6 +92,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Image Editor",
     icon: <Settings2 size={18} />,
     category: "Image Tools",
+    pin: true,
   },
   {
     id: "img-compress",
@@ -91,6 +100,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Compress Image",
     icon: <Minimize2 size={18} />,
     category: "Image Tools",
+    pin: true,
   },
   {
     id: "img-convert",
@@ -98,6 +108,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Convert Format",
     icon: <Repeat size={18} />,
     category: "Image Tools",
+    pin: true,
   },
 
   {
@@ -106,6 +117,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Data Converter",
     icon: <FileJson size={18} />,
     category: "Data Tools",
+    pin: true,
   },
   {
     id: "json-beauty",
@@ -113,6 +125,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "JSON Formatter",
     icon: <Braces size={18} />,
     category: "Data Tools",
+    pin: true,
   },
 
   {
@@ -121,6 +134,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "QR Generator",
     icon: <QrCode size={18} />,
     category: "Text Tools",
+    pin: true,
   },
   {
     id: "word-count",
@@ -128,5 +142,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Word Counter",
     icon: <Type size={18} />,
     category: "Text Tools",
+    pin: true,
+  },
+  {
+    id: "license",
+    path: "/license",
+    label: "OS Licenses",
+    icon: <BookOpen size={18} />,
+    category: "General",
+    pin: false,
   },
 ];

@@ -11,8 +11,10 @@ import {
   Text,
 } from "@mantine/core";
 import { convertData, DataFormat } from "../../services/dataService";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
 const DataConverter: React.FC = () => {
+  const { settings } = useSettingsContext();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [fromFormat, setFromFormat] = useState<string | null>("json");
@@ -86,7 +88,7 @@ const DataConverter: React.FC = () => {
 
           <ActionIcon
             variant="subtle"
-            color="pink"
+            color={settings.primaryColor}
             onClick={swapFormats}
             size="lg"
             mb={4}

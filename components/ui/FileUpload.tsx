@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { UploadCloud } from "lucide-react";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
 interface FileUploadProps {
   accept: string;
@@ -14,6 +15,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onFilesSelected,
   label = "Click to upload or drag and drop",
 }) => {
+  const { settings } = useSettingsContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,13 +31,36 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }
   };
 
+  const primaryColor = `var(--mantine-color-${settings.primaryColor}-6)`;
+  const primaryColorLight = `var(--mantine-color-${settings.primaryColor}-0)`;
+  const primaryColorLightAlpha = `var(--mantine-color-${settings.primaryColor}-5)`;
+
   return (
     <div
       onClick={() => inputRef.current?.click()}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
-      className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-pink-500 dark:hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-slate-800/50 rounded-xl p-8 cursor-pointer transition-all text-center group bg-white dark:bg-transparent"
+      className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 cursor-pointer transition-all text-center group bg-white dark:bg-transparent hover-file-upload"
+      style={
+        {
+          // @ts-ignore - CSS custom properties
+          "--hover-border-color": primaryColor,
+          "--hover-bg-color": primaryColorLight,
+          "--hover-icon-bg": primaryColorLightAlpha,
+          "--hover-icon-color": primaryColor,
+        } as React.CSSProperties
+      }
     >
+      <style>
+        {`
+          .hover-file-upload:hover {
+            border-color: var(--hover-border-color) !important;
+          }
+          .hover-file-upload:hover .icon-wrapper {
+            color: var(--hover-icon-color);
+          }
+        `}
+      </style>
       <input
         type="file"
         ref={inputRef}
@@ -45,7 +70,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         onChange={handleChange}
       />
       <div className="flex flex-col items-center gap-3">
-        <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-pink-50 dark:group-hover:bg-pink-500/20 text-slate-400 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
+        <div className="icon-wrapper p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 transition-colors">
           <UploadCloud size={32} />
         </div>
         <div>

@@ -1,21 +1,52 @@
 import React from "react";
-import { ActionIcon, useMantineColorScheme } from "@mantine/core";
-import { Sun, Moon } from "lucide-react";
+import { ActionIcon, Tooltip } from "@mantine/core";
+import { Sun, Moon, Monitor } from "lucide-react";
+import { useSettingsContext } from "../../contexts/SettingsContext";
+import { ThemeMode } from "../../types/settings";
 
 const ThemeToggle: React.FC = () => {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const dark = colorScheme === "dark";
+  const { settings, updateThemeMode } = useSettingsContext();
+
+  const cycleTheme = () => {
+    const modes: ThemeMode[] = ["light", "dark", "system"];
+    const currentIndex = modes.indexOf(settings.themeMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    updateThemeMode(modes[nextIndex]);
+  };
+
+  const getIcon = () => {
+    switch (settings.themeMode) {
+      case "light":
+        return <Sun size={20} />;
+      case "dark":
+        return <Moon size={20} />;
+      case "system":
+        return <Monitor size={20} />;
+    }
+  };
+
+  const getLabel = () => {
+    switch (settings.themeMode) {
+      case "light":
+        return "Light Mode";
+      case "dark":
+        return "Dark Mode";
+      case "system":
+        return "System Mode";
+    }
+  };
 
   return (
-    <ActionIcon
-      variant="subtle"
-      color={dark ? "yellow" : "pink"}
-      onClick={() => toggleColorScheme()}
-      title="Toggle color scheme"
-      size="lg"
-    >
-      {dark ? <Sun size={20} /> : <Moon size={20} />}
-    </ActionIcon>
+    <Tooltip label={getLabel()} position="bottom">
+      <ActionIcon
+        variant="subtle"
+        color={settings.themeMode === "dark" ? "yellow" : settings.primaryColor}
+        onClick={cycleTheme}
+        size="lg"
+      >
+        {getIcon()}
+      </ActionIcon>
+    </Tooltip>
   );
 };
 

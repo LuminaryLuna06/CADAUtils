@@ -27,6 +27,7 @@ import JSZip from "jszip";
 import FileUpload from "../ui/FileUpload";
 import { convertImage } from "../../services/imageService";
 import { downloadBlob } from "../../services/pdfService";
+import { useSettingsContext } from "../../contexts/SettingsContext";
 
 interface FileItem {
   id: string;
@@ -37,6 +38,7 @@ interface FileItem {
 }
 
 const ImageConverter: React.FC = () => {
+  const { settings } = useSettingsContext();
   const [items, setItems] = useState<FileItem[]>([]);
   const [format, setFormat] = useState<string | null>("png");
   const [isGlobalProcessing, setIsGlobalProcessing] = useState(false);
@@ -236,7 +238,7 @@ const ImageConverter: React.FC = () => {
             <Group justify="space-between">
               <Group>
                 <Text fw={500}>Selected Files ({items.length})</Text>
-                <Badge variant="light" color="pink">
+                <Badge variant="light" color={settings.primaryColor}>
                   Target: {format?.toUpperCase()}
                 </Badge>
               </Group>
@@ -270,83 +272,87 @@ const ImageConverter: React.FC = () => {
                 <Paper
                   key={item.id}
                   p="sm"
-                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-4 transition-all"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all"
                 >
-                  {/* Thumbnail */}
-                  <div className="w-12 h-12 rounded bg-slate-100 dark:bg-slate-900 overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 relative">
-                    <img
-                      src={URL.createObjectURL(item.file)}
-                      alt="thm"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <Text size="sm" fw={500} truncate>
-                      {item.file.name}
-                    </Text>
-                    <Group gap="xs">
-                      <Text size="xs" c="dimmed">
-                        {(item.file.size / 1024).toFixed(0)} KB
-                      </Text>
-                      <ArrowRight size={10} className="text-slate-400" />
-                      <Badge size="xs" variant="outline" color="gray">
-                        {item.file.type.split("/")[1]?.toUpperCase()}
-                      </Badge>
-                    </Group>
-                  </div>
-
-                  {/* Status & Actions */}
-                  <Group gap="sm">
-                    {item.status === "processing" && (
-                      <Loader2
-                        size={18}
-                        className="animate-spin text-pink-500"
+                  <Group wrap="nowrap" gap="md">
+                    {/* Thumbnail */}
+                    <div className="w-12 h-12 rounded bg-slate-100 dark:bg-slate-900 overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 relative">
+                      <img
+                        src={URL.createObjectURL(item.file)}
+                        alt="thm"
+                        className="w-full h-full object-cover"
                       />
-                    )}
+                    </div>
 
-                    {item.status === "done" && (
-                      <Badge
-                        color="green"
-                        variant="light"
-                        leftSection={<Check size={10} />}
-                      >
-                        Done
-                      </Badge>
-                    )}
-
-                    {item.status === "error" && (
-                      <Tooltip label={item.errorMsg}>
-                        <Badge
-                          color="red"
-                          variant="light"
-                          leftSection={<AlertCircle size={10} />}
-                        >
-                          Error
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <Text size="sm" fw={500} lineClamp={2}>
+                        {item.file.name}
+                      </Text>
+                      <Group gap="xs">
+                        <Text size="xs" c="dimmed">
+                          {(item.file.size / 1024).toFixed(0)} KB
+                        </Text>
+                        <Badge size="xs" variant="outline" color="gray">
+                          {item.file.type.split("/")[1]?.toUpperCase()}
                         </Badge>
-                      </Tooltip>
-                    )}
+                      </Group>
+                    </div>
 
-                    {item.status === "done" ? (
-                      <ActionIcon
-                        variant="filled"
-                        color="green"
-                        onClick={() => downloadItem(item)}
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </ActionIcon>
-                    ) : (
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => removeItem(item.id)}
-                        disabled={item.status === "processing"}
-                      >
-                        <Trash2 size={16} />
-                      </ActionIcon>
-                    )}
+                    {/* Status & Actions */}
+                    <Group gap="sm">
+                      {item.status === "processing" && (
+                        <Loader2
+                          size={18}
+                          className="animate-spin"
+                          style={{
+                            color: `var(--mantine-color-${settings.primaryColor}-6)`,
+                          }}
+                        />
+                      )}
+
+                      {item.status === "done" && (
+                        <Badge
+                          color="green"
+                          variant="light"
+                          leftSection={<Check size={10} />}
+                        >
+                          Done
+                        </Badge>
+                      )}
+
+                      {item.status === "error" && (
+                        <Tooltip label={item.errorMsg}>
+                          <Badge
+                            color="red"
+                            variant="light"
+                            leftSection={<AlertCircle size={10} />}
+                          >
+                            Error
+                          </Badge>
+                        </Tooltip>
+                      )}
+
+                      {item.status === "done" ? (
+                        <ActionIcon
+                          variant="filled"
+                          color="green"
+                          onClick={() => downloadItem(item)}
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </ActionIcon>
+                      ) : (
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => removeItem(item.id)}
+                          disabled={item.status === "processing"}
+                        >
+                          <Trash2 size={16} />
+                        </ActionIcon>
+                      )}
+                    </Group>
                   </Group>
                 </Paper>
               ))}

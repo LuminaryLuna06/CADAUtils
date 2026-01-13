@@ -175,3 +175,107 @@ export const convertImage = async (
     img.src = URL.createObjectURL(file);
   });
 };
+
+export interface ImageStyleOptions {
+  rotation: number; // 0-360 degrees
+  borderRadius: number; // 0-50 percentage
+  backgroundColor: string; // hex color
+  padding: number; // pixels
+}
+
+export const applyImageStyle = async (
+  file: File,
+  options: ImageStyleOptions
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const { rotation, borderRadius, backgroundColor, padding } = options;
+
+      // Calculate rotated dimensions
+      const angleRad = (rotation * Math.PI) / 180;
+      const sin = Math.abs(Math.sin(angleRad));
+      const cos = Math.abs(Math.cos(angleRad));
+
+      const rotatedWidth = img.width * cos + img.height * sin;
+      const rotatedHeight = img.width * sin + img.height * cos;
+
+      // Add padding to dimensions
+      const canvasWidth = Math.round(rotatedWidth + padding * 2);
+      const canvasHeight = Math.round(rotatedHeight + padding * 2);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas context not available"));
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      // Fill background color
+      if (backgroundColor && backgroundColor !== "transparent") {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      }
+
+      // Save context, move to center, and rotate
+      ctx.save();
+      ctx.translate(canvasWidth / 2, canvasHeight / 2);
+      ctx.rotate(angleRad);
+
+      // Apply border radius if needed
+      if (borderRadius > 0) {
+        const radius = Math.min(img.width, img.height) * (borderRadius / 100);
+        const x = -img.width / 2;
+        const y = -img.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + img.width - radius, y);
+        ctx.quadraticCurveTo(x + img.width, y, x + img.width, y + radius);
+        ctx.lineTo(x + img.width, y + img.height - radius);
+        ctx.quadraticCurveTo(
+          x + img.width,
+          y + img.height,
+          x + img.width - radius,
+          y + img.height
+        );
+        ctx.lineTo(x + radius, y + img.height);
+        ctx.quadraticCurveTo(x, y + img.height, x, y + img.height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+        ctx.clip();
+      }
+
+      // Draw image centered
+      ctx.drawImage(
+        img,
+        -img.width / 2,
+        -img.height / 2,
+        img.width,
+        img.height
+      );
+      ctx.restore();
+
+      // Determine output format
+      const outputType =
+        file.type === "image/jpeg" || file.type === "image/webp"
+          ? file.type
+          : "image/png";
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Style application failed"));
+        },
+        outputType,
+        0.92
+      );
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = URL.createObjectURL(file);
+  });
+};
