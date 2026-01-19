@@ -296,6 +296,14 @@ const ImageConverter: React.FC = () => {
                         <Badge size="xs" variant="outline" color="gray">
                           {item.file.type.split("/")[1]?.toUpperCase()}
                         </Badge>
+                        <ArrowRight size={12} className="text-slate-400" />
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          color={settings.primaryColor}
+                        >
+                          {format?.toUpperCase()}
+                        </Badge>
                       </Group>
                     </div>
 
