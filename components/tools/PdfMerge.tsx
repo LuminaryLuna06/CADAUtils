@@ -10,7 +10,7 @@ import {
   Eye,
 } from "lucide-react";
 import { clsx } from "clsx";
-import { Modal, Button, TextInput } from "@mantine/core";
+import { Modal, Button, TextInput, ActionIcon } from "@mantine/core";
 import FileUpload from "../ui/FileUpload";
 import PdfPreview from "../ui/PdfPreview";
 import {
@@ -174,12 +174,12 @@ const PdfMerge: React.FC = () => {
                   <GripVertical size={20} />
                 </div>
                 <FileText className="text-red-500 dark:text-red-400 shrink-0 mt-1" />
-                <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex-1 min-w-0">
                   <div>
-                    <p className="font-medium text-sm truncate text-slate-700 dark:text-slate-200">
+                    <p className="font-medium text-sm truncate text-slate-700 dark:text-slate-200 m-0">
                       {item.file.name}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 m-0 mb-2">
                       {(item.file.size / 1024 / 1024).toFixed(2)} MB •{" "}
                       {item.pageCount} page{item.pageCount > 1 ? "s" : ""}
                     </p>
@@ -198,29 +198,32 @@ const PdfMerge: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                  <button
+                  <ActionIcon
+                    variant="light"
                     onClick={() => moveFile(idx, -1)}
                     disabled={idx === 0}
                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded disabled:opacity-30"
                     title="Move Up"
                   >
                     <ArrowUp size={16} />
-                  </button>
-                  <button
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="light"
                     onClick={() => moveFile(idx, 1)}
                     disabled={idx === files.length - 1}
                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded disabled:opacity-30"
                     title="Move Down"
                   >
                     <ArrowDown size={16} />
-                  </button>
-                  <button
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="light"
                     onClick={() => removeFile(idx)}
                     className="p-1 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500 dark:text-red-400 rounded ml-2"
                     title="Remove"
                   >
                     <X size={16} />
-                  </button>
+                  </ActionIcon>
                 </div>
               </div>
             </div>
@@ -230,7 +233,7 @@ const PdfMerge: React.FC = () => {
             <Button
               onClick={handlePreview}
               disabled={processing || files.length < 1}
-              variant="filled"
+              variant="light"
               color="gray"
               leftSection={<Eye size={18} />}
             >
@@ -240,7 +243,7 @@ const PdfMerge: React.FC = () => {
               onClick={handleMerge}
               disabled={processing || files.length < 2}
               loading={processing}
-              variant="filled"
+              variant="light"
               color={settings.primaryColor}
               leftSection={!processing && <Download size={20} />}
             >
@@ -254,7 +257,7 @@ const PdfMerge: React.FC = () => {
         opened={previewModal}
         onClose={() => setPreviewModal(false)}
         title="Merge Preview"
-        size="xl"
+        size="95vw"
         centered
       >
         {loadingPreview ? (
@@ -268,7 +271,7 @@ const PdfMerge: React.FC = () => {
             />
           </div>
         ) : previewData ? (
-          <PdfPreview file={previewData} maxHeight={500} />
+          <PdfPreview file={previewData} maxHeight={window.innerHeight * 0.8} />
         ) : null}
       </Modal>
     </div>

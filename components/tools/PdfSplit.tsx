@@ -100,7 +100,7 @@ const PdfSplit: React.FC = () => {
               p="lg"
               radius="md"
               withBorder
-              className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+              className="bg-white dark:bg-slate-800! border-slate-200 dark:border-slate-700!"
             >
               <Group justify="space-between" mb="lg">
                 <Group>
@@ -130,7 +130,7 @@ const PdfSplit: React.FC = () => {
                 <Paper
                   p="sm"
                   mb="md"
-                  className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20"
+                  className="bg-blue-50 dark:bg-blue-500/10! border border-blue-200"
                 >
                   <Text size="sm" c="blue" fw={500}>
                     {selectedPages.length} page
@@ -159,6 +159,7 @@ const PdfSplit: React.FC = () => {
                   disabled={!range || selectedPages.length === 0}
                   fullWidth
                   size="md"
+                  variant="light"
                   leftSection={!processing && <Download size={20} />}
                 >
                   Download
@@ -169,7 +170,7 @@ const PdfSplit: React.FC = () => {
                     setRange("");
                     setShowPreview(false);
                   }}
-                  variant="subtle"
+                  variant="outline"
                   color="gray"
                   leftSection={<RefreshCw size={18} />}
                   fullWidth

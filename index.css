@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Dark mode variant for Mantine */
+@variant dark ([data-mantine-color-scheme="dark"] &);
+
+@theme {
+  /* Custom colors */
+  --color-slate-850: #151b28;
+  --color-slate-900: #0f172a;
+  
+  /* Font family */
+  --font-sans: "Inter", sans-serif;
+}
 
 /* Custom styles */
 body {

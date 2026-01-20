@@ -98,21 +98,25 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({
                 />
               </div>
             }
+            className="space-y-0"
           >
-            {pagesToShow.map((pageNum) => (
-              <div key={pageNum} className="mb-4 last:mb-0">
-                <Page
-                  pageNumber={pageNum}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  className="shadow-lg"
-                />
-                <Text size="xs" c="dimmed" ta="center" mt="xs">
-                  Page {pageNum}
-                  {numPages > 0 && ` / ${numPages}`}
-                </Text>
-              </div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+              {pagesToShow.map((pageNum) => (
+                <div key={pageNum} className="flex flex-col items-center">
+                  <Page
+                    pageNumber={pageNum}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="shadow-lg max-w-full"
+                    width={Math.min(document.body.clientWidth * 0.85, 450)}
+                  />
+                  <Text size="xs" c="dimmed" ta="center" mt="xs">
+                    Page {pageNum}
+                    {numPages > 0 && ` / ${numPages}`}
+                  </Text>
+                </div>
+              ))}
+            </div>
           </Document>
         ) : null}
       </div>

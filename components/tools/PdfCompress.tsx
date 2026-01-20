@@ -145,13 +145,13 @@ const PdfCompress: React.FC = () => {
             p="lg"
             radius="md"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-slate-800! border-slate-200 dark:border-slate-700!"
           >
             <Group justify="space-between" mb="md" align="flex-start">
               <Text fw={600} size="lg">
                 Settings
               </Text>
-              <ActionIcon variant="subtle" color="gray" onClick={handleReset}>
+              <ActionIcon variant="light" color="gray" onClick={handleReset}>
                 <RefreshCw size={16} />
               </ActionIcon>
             </Group>
@@ -177,7 +177,7 @@ const PdfCompress: React.FC = () => {
                 <Paper
                   p="sm"
                   mt="sm"
-                  className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20"
+                  className="bg-blue-50! dark:bg-blue-500/10! border border-blue-200 dark:border-blue-500/20!"
                 >
                   <Group gap="xs" mb={4}>
                     <Info size={14} className="text-blue-600" />
@@ -259,12 +259,12 @@ const PdfCompress: React.FC = () => {
             p="lg"
             radius="md"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center min-h-[400px]"
+            className="bg-white dark:bg-slate-800! border-slate-200! dark:border-slate-700! flex! flex-col items-center justify-center min-h-[400px]"
           >
             {compressedData ? (
               <div className="w-full space-y-4">
-                <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                  <div className="flex flex-col items-center justify-center">
+                <div className="relative bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-col items-center justify-center p-10">
                     <FileDown
                       size={48}
                       className="text-green-600 dark:text-green-400 mb-2"

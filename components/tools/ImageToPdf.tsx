@@ -375,7 +375,7 @@ const ImageToPdf: React.FC = () => {
             p="md"
             radius="lg"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 h-fit sticky top-4"
+            className="bg-white dark:bg-slate-800! border-slate-200 dark:border-slate-700! h-fit sticky top-4"
           >
             <Stack gap="md">
               <Text size="sm" fw={600}>
@@ -561,7 +561,7 @@ const ImageToPdf: React.FC = () => {
       >
         <Stack gap="md">
           {previewUrl && (
-            <div className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg max-h-[70vh] overflow-auto flex flex-col items-center gap-4">
+            <div className="bg-slate-100 p-4 rounded-lg max-h-[77vh] overflow-auto flex flex-col items-center gap-4">
               <Document
                 file={previewUrl}
                 onLoadSuccess={({ numPages }) => setPreviewPageCount(numPages)}
@@ -583,6 +583,7 @@ const ImageToPdf: React.FC = () => {
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                       className="shadow-lg"
+                      width={500}
                     />
                     {previewPageCount > 1 && (
                       <Text size="xs" c="dimmed" ta="center" mt="xs">

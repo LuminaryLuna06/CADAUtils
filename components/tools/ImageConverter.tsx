@@ -233,7 +233,7 @@ const ImageConverter: React.FC = () => {
           <Paper
             p="md"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shrink-0"
+            className="bg-white dark:bg-slate-800! border-slate-200! dark:border-slate-700! shrink-0"
           >
             <Group justify="space-between">
               <Group>
@@ -266,13 +266,13 @@ const ImageConverter: React.FC = () => {
             </Group>
           </Paper>
 
-          <ScrollArea className="flex-1 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 p-2">
+          <ScrollArea className="flex-1 bg-slate-50 dark:bg-slate-900/50! rounded-lg border border-slate-200! dark:border-slate-800! p-2">
             <Stack gap="sm">
               {items.map((item) => (
                 <Paper
                   key={item.id}
                   p="sm"
-                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all"
+                  className="bg-white dark:bg-slate-800! border border-slate-200! dark:border-slate-700! transition-all"
                 >
                   <Group wrap="nowrap" gap="md">
                     {/* Thumbnail */}

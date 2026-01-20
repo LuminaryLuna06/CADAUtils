@@ -419,7 +419,7 @@ const ImageEditor: React.FC = () => {
           <Paper
             p="sm"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-slate-800! border-slate-200 dark:border-slate-700!"
           >
             <SegmentedControl
               fullWidth
@@ -438,7 +438,7 @@ const ImageEditor: React.FC = () => {
           <Paper
             p="md"
             withBorder
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 flex-1 relative overflow-hidden"
+            className="bg-white dark:bg-slate-800! border-slate-200 dark:border-slate-700! flex-1 relative overflow-hidden"
           >
             {!file && (
               <Overlay
@@ -840,7 +840,7 @@ const ImageEditor: React.FC = () => {
                       src={currentSrc}
                       onLoad={onImageLoad}
                       style={{
-                        maxHeight: "calc(100vh - 250px)",
+                        maxHeight: "calc(100vh - 300px)",
                         maxWidth: "100%",
                       }}
                     />

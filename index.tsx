@@ -1,13 +1,15 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
 import {
   MantineProvider,
   createTheme,
   useMantineColorScheme,
 } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 import "react-image-crop/dist/ReactCrop.css";
+import "./index.css";
 import App from "./App";
 import {
   SettingsProvider,
@@ -68,6 +70,7 @@ const ThemedApp: React.FC = () => {
 
   return (
     <MantineProvider theme={theme}>
+      <Notifications position="top-right" />
       <GlobalStyles primaryColor={settings.primaryColor} />
       <ThemeUpdater />
       <App />

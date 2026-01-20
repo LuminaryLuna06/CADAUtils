@@ -218,7 +218,7 @@ const License: React.FC = () => {
                   padding="lg"
                   radius="md"
                   withBorder
-                  className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+                  className="bg-white dark:bg-slate-800/50! border-slate-200 dark:border-slate-700! hover:shadow-lg transition-shadow"
                 >
                   <Stack gap="sm">
                     <Group justify="space-between">
@@ -226,7 +226,7 @@ const License: React.FC = () => {
                         <Text
                           size="lg"
                           fw={600}
-                          className="font-mono text-slate-900 dark:text-white"
+                          className="font-mono text-slate-900 dark:text-white!"
                         >
                           {lib.name}
                         </Text>
