@@ -68,7 +68,7 @@ const MainLayout: React.FC = () => {
 
         {/* Scrollable Area - Added relative here so LoadingOverlay covers this entire area */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 relative">
-          <div className="max-w-4xl mx-auto h-full">
+          <div className="max-w-7xl mx-auto h-full">
             <Suspense
               fallback={
                 <LoadingOverlay

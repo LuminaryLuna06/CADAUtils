@@ -63,13 +63,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <div key={item.id} className="group">
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         navigate(item.path);
                         onClose();
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          navigate(item.path);
+                          onClose();
+                        }
+                      }}
                       className={`
-                      w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border-2
+                      w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border-2 cursor-pointer
                       ${
                         isActive
                           ? "border-transparent text-slate-900 dark:text-white"
@@ -102,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                           <X size={12} />
                         </ActionIcon>
                       </Tooltip>
-                    </button>
+                    </div>
                   </div>
                 );
               })}
@@ -123,13 +131,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   const pinned = isPinned(item.id);
                   return (
                     <div key={item.id} className="group">
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           navigate(item.path);
                           onClose();
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            navigate(item.path);
+                            onClose();
+                          }
+                        }}
                         className={`
-                        w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border-2
+                        w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border-2 cursor-pointer
                         ${
                           isActive
                             ? "border-transparent text-slate-900 dark:text-white"
@@ -170,7 +186,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             </ActionIcon>
                           </Tooltip>
                         )}
-                      </button>
+                      </div>
                     </div>
                   );
                 }
