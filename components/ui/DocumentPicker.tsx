@@ -139,10 +139,11 @@ const DocumentPicker: React.FC<DocumentPickerProps> = ({
         {/* Search and Sort */}
         <Group grow>
           <TextInput
-            placeholder="Enter a document name or id..."
+            placeholder="Enter a document name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<Search size={16} />}
+            label="Document title"
           />
           <Select
             value={sortBy}
@@ -151,7 +152,7 @@ const DocumentPicker: React.FC<DocumentPickerProps> = ({
               { value: "date", label: "Date" },
               { value: "name", label: "Name" },
             ]}
-            leftSection={<Text size="sm">Sort by:</Text>}
+            label={"Sort by:"}
           />
         </Group>
 

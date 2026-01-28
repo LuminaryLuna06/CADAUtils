@@ -1,8 +1,9 @@
-import React, { useState, CSSProperties } from "react";
+import React, { useState, useEffect, CSSProperties } from "react";
 import {
   Menu,
   ActionIcon,
   Tooltip,
+  Checkbox,
   useMantineColorScheme,
 } from "@mantine/core";
 import {
@@ -17,6 +18,7 @@ import {
   Files,
   ArrowUpDown,
 } from "lucide-react";
+import { JsonDiff, findDiffByPath } from "../../services/diffService";
 
 interface JsonNode {
   key: string;
@@ -28,6 +30,7 @@ interface JsonNode {
 
 interface JsonTreeProps {
   data: any;
+  expandAll?: boolean | null;
   onEdit?: (path: string[], newValue: any) => void;
   onDelete?: (path: string[]) => void;
   onAdd?: (path: string[], type: string, index?: number) => void;
@@ -36,6 +39,9 @@ interface JsonTreeProps {
   onPaste?: (path: string[]) => void;
   onDuplicate?: (path: string[]) => void;
   onSort?: (path: string[]) => void;
+  diffs?: JsonDiff[];
+  activeDiffPath?: string;
+  isLeft?: boolean;
 }
 
 interface InsertLineProps {
@@ -104,6 +110,7 @@ const InsertLine: React.FC<InsertLineProps> = ({ path, index, onInsert }) => {
 
 const JsonTree: React.FC<JsonTreeProps> = ({
   data,
+  expandAll,
   onEdit,
   onDelete,
   onAdd,
@@ -112,6 +119,9 @@ const JsonTree: React.FC<JsonTreeProps> = ({
   onPaste,
   onDuplicate,
   onSort,
+  diffs,
+  activeDiffPath,
+  isLeft,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [editingPath, setEditingPath] = useState<string | null>(null);
@@ -124,6 +134,45 @@ const JsonTree: React.FC<JsonTreeProps> = ({
   const isDark = colorScheme === "dark";
 
   const pathToString = (path: string[]) => path.join(".");
+
+  // Collect all paths in the JSON object
+  const collectAllPaths = (value: any, currentPath: string[] = []): string[] => {
+    const paths: string[] = [];
+    const type = getValueType(value);
+    
+    if (type === "object" || type === "array") {
+      paths.push(pathToString(currentPath));
+      const entries = type === "array" ? value : Object.entries(value);
+      
+      if (type === "array") {
+        value.forEach((item: any, idx: number) => {
+          paths.push(...collectAllPaths(item, [...currentPath, String(idx)]));
+        });
+      } else {
+        Object.entries(value).forEach(([key, val]) => {
+          paths.push(...collectAllPaths(val, [...currentPath, key]));
+        });
+      }
+    }
+    
+    return paths;
+  };
+
+  // Handle expand/collapse all
+  useEffect(() => {
+    if (expandAll === true) {
+      const allPaths = collectAllPaths(data, []);
+      setExpandedPaths(new Set(allPaths));
+    } else if (expandAll === false) {
+      setExpandedPaths(new Set());
+    }
+  }, [expandAll]);
+
+  // Expand all by default on mount
+  useEffect(() => {
+    const allPaths = collectAllPaths(data, []);
+    setExpandedPaths(new Set(allPaths));
+  }, [data]);
 
   const toggleExpand = (path: string[]) => {
     const pathStr = pathToString(path);
@@ -213,7 +262,23 @@ const JsonTree: React.FC<JsonTreeProps> = ({
               : isHovered
               ? "bg-slate-100 dark:bg-slate-800"
               : ""
-          }`}
+          } ${
+            (() => {
+              if (!diffs) return "";
+              const diff = findDiffByPath(diffs, path);
+              if (!diff) return "";
+              
+              if (isLeft) {
+                if (diff.type === "deleted") return "bg-red-100 dark:bg-red-900/30 ring-1 ring-red-500/50";
+                if (diff.type === "modified" || diff.type === "array") return "bg-yellow-100 dark:bg-yellow-900/30";
+              } else {
+                if (diff.type === "added") return "bg-green-100 dark:bg-green-900/30 ring-1 ring-green-500/50";
+                if (diff.type === "modified" || diff.type === "array") return "bg-yellow-100 dark:bg-yellow-900/30";
+              }
+              return "";
+             })()
+          } ${activeDiffPath === pathStr ? "ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 z-10" : ""}`}
+          data-diff-path={pathStr}
           onMouseEnter={() => setHoveredPath(pathStr)}
           onMouseLeave={() => setHoveredPath(null)}
           onClick={(e) => {
@@ -318,11 +383,6 @@ const JsonTree: React.FC<JsonTreeProps> = ({
 
                     return (
                       <React.Fragment key={key}>
-                        <InsertLine
-                          path={path}
-                          index={idx}
-                          onInsert={(p, t, i) => onAdd?.(p, t, i)}
-                        />
                         <div className="py-1">
                           {isEditingKey ? (
                             <input
@@ -361,11 +421,7 @@ const JsonTree: React.FC<JsonTreeProps> = ({
                       </React.Fragment>
                     );
                   })}
-                  <InsertLine
-                    path={path}
-                    index={Object.keys(value).length}
-                    onInsert={(p, t, i) => onAdd?.(p, t, i)}
-                  />
+
                 </>
               )}
             </div>
@@ -386,7 +442,23 @@ const JsonTree: React.FC<JsonTreeProps> = ({
             : isHovered
             ? "bg-slate-100 dark:bg-slate-800"
             : ""
-        }`}
+        } ${
+          (() => {
+            if (!diffs) return "";
+            const diff = findDiffByPath(diffs, path);
+            if (!diff) return "";
+            
+            if (isLeft) {
+              if (diff.type === "deleted") return "bg-red-100 dark:bg-red-900/30 ring-1 ring-red-500/50";
+              if (diff.type === "modified" || diff.type === "array") return "bg-yellow-100 dark:bg-yellow-900/30";
+            } else {
+              if (diff.type === "added") return "bg-green-100 dark:bg-green-900/30 ring-1 ring-green-500/50";
+              if (diff.type === "modified" || diff.type === "array") return "bg-yellow-100 dark:bg-yellow-900/30";
+            }
+            return "";
+           })()
+        } ${activeDiffPath === pathStr ? "ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 z-10" : ""}`}
+        data-diff-path={pathStr}
         onMouseEnter={() => setHoveredPath(pathStr)}
         onMouseLeave={() => setHoveredPath(null)}
         onClick={(e) => {
@@ -410,6 +482,22 @@ const JsonTree: React.FC<JsonTreeProps> = ({
           />
         ) : (
           <>
+            {type === "boolean" && (
+              <Checkbox
+                checked={value}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(path, !value);
+                }}
+                size="xs"
+                color="blue"
+                styles={{
+                  input: {
+                    cursor: "pointer",
+                  },
+                }}
+              />
+            )}
             <span 
               style={{ color: valueColor[type] }}
               onDoubleClick={(e) => {

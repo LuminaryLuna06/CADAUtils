@@ -8,7 +8,6 @@ import {
   FileJson,
   FileUp,
   Download,
-  Table,
   Type,
   ArrowLeft,
   ArrowRight,
@@ -17,6 +16,12 @@ import {
   FilePlus,
   HardDrive,
   Check,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Undo,
+  Redo,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   Button,
@@ -31,6 +36,9 @@ import {
   Stack,
   Modal,
   Divider,
+  Badge,
+  Checkbox,
+  ActionIcon,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -49,7 +57,10 @@ import DocumentPicker, {
   getDocuments,
   saveDocument,
 } from "../ui/DocumentPicker";
+import TransformModal from "../ui/TransformModal";
 import { useSettingsContext } from "../../contexts/SettingsContext";
+import { useHistory } from "../../hooks/useHistory";
+import { calculateDiff, JsonDiff, findDiffByPath, getDiffColorClass } from "../../services/diffService";
 
 const SAMPLE_JSON = {
   project: "CadaUtils",
@@ -66,13 +77,14 @@ const SAMPLE_JSON = {
   ],
 };
 
-type ViewMode = "text" | "tree" | "code" | "table";
+type ViewMode = "text" | "tree" | "code";
 
 // Editable Document Name Component
 const EditableDocName: React.FC<{
   value: string;
   onChange: (newName: string) => void;
-}> = ({ value, onChange }) => {
+  showSaved?: boolean;
+}> = ({ value, onChange, showSaved = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
 
@@ -105,19 +117,30 @@ const EditableDocName: React.FC<{
   }
 
   return (
-    <Text
-      size="sm"
-      fw={500}
-      c="dimmed"
-      mb="xs"
-      className="cursor-pointer hover:underline"
-      onClick={() => {
-        setEditValue(value);
-        setIsEditing(true);
-      }}
-    >
-      {value}
-    </Text>
+    <Group gap="xs" align="center" mb="xs">
+      <Text
+        size="sm"
+        fw={500}
+        c="dimmed"
+        className="cursor-pointer hover:underline"
+        onClick={() => {
+          setEditValue(value);
+          setIsEditing(true);
+        }}
+      >
+        {value}
+      </Text>
+      {showSaved && (
+        <Badge
+          size="xs"
+          color="green"
+          variant="light"
+          className="animate-fade-in"
+        >
+          Saved
+        </Badge>
+      )}
+    </Group>
   );
 };
 
@@ -209,8 +232,28 @@ const TextareaWithLineNumbers: React.FC<{
 
 const JsonBeautifier: React.FC = () => {
   const { settings } = useSettingsContext();
-  const [leftInput, setLeftInput] = useState("");
-  const [rightInput, setRightInput] = useState("");
+  
+  // Use history hook for undo/redo
+  const {
+    state: leftInput,
+    setState: setLeftInput,
+    undo: undoLeft,
+    redo: redoLeft,
+    canUndo: canUndoLeft,
+    canRedo: canRedoLeft,
+    reset: resetLeftHistory,
+  } = useHistory("");
+  
+  const {
+    state: rightInput,
+    setState: setRightInput,
+    undo: undoRight,
+    redo: redoRight,
+    canUndo: canUndoRight,
+    canRedo: canRedoRight,
+    reset: resetRightHistory,
+  } = useHistory("");
+  
   const [leftDocName, setLeftDocName] = useState("New document 1");
   const [rightDocName, setRightDocName] = useState("New document 2");
   const [leftError, setLeftError] = useState("");
@@ -226,6 +269,17 @@ const JsonBeautifier: React.FC = () => {
   );
   const [pickerOpened, setPickerOpened] = useState(false);
   const [pickerSide, setPickerSide] = useState<"left" | "right">("left");
+  const [leftExpandAll, setLeftExpandAll] = useState<boolean | null>(null);
+  const [rightExpandAll, setRightExpandAll] = useState<boolean | null>(null);
+  const [transformOpened, setTransformOpened] = useState(false);
+  const [showLeftSaved, setShowLeftSaved] = useState(false);
+  const [showRightSaved, setShowRightSaved] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<"left" | "right">("left");
+  
+  // Compare mode state
+  const [compareMode, setCompareMode] = useState(false);
+  const [diffs, setDiffs] = useState<JsonDiff[]>([]);
+  const [currentDiffIndex, setCurrentDiffIndex] = useState(0);
 
   const leftFileRef = useRef<HTMLInputElement>(null);
   const rightFileRef = useRef<HTMLInputElement>(null);
@@ -238,33 +292,69 @@ const JsonBeautifier: React.FC = () => {
     initializeDocuments();
     const docs = getDocuments();
     if (docs.length >= 2) {
-      setLeftInput(docs[0].content);
+      // Use reset instead of setState to set initial state and clear history
+      resetLeftHistory(docs[0].content);
       setLeftDocName(docs[0].name);
-      setRightInput(docs[1].content);
+      resetRightHistory(docs[1].content);
       setRightDocName(docs[1].name);
     }
-  }, []);
+  }, [resetLeftHistory, resetRightHistory]);
 
   // Auto-save when content changes
   useEffect(() => {
-    if (leftInput !== undefined) {
+    if (leftInput !== undefined && leftInput !== "") {
       const timer = setTimeout(() => {
         saveDocument({ name: leftDocName, content: leftInput });
+        // Show "Saved" indicator
+        setShowLeftSaved(true);
+        setTimeout(() => setShowLeftSaved(false), 1000);
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [leftInput, leftDocName]);
 
   useEffect(() => {
-    if (rightInput !== undefined) {
+    if (rightInput !== undefined && rightInput !== "") {
       const timer = setTimeout(() => {
         saveDocument({ name: rightDocName, content: rightInput });
+        // Show "Saved" indicator
+        setShowRightSaved(true);
+        setTimeout(() => setShowRightSaved(false), 1000);
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [rightInput, rightDocName]);
 
-  // Parse for tree/table view
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if Ctrl (Windows/Linux) or Cmd (Mac) is pressed
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      
+      if (isCtrlOrCmd && e.shiftKey && e.key === 'z') {
+        // Ctrl+Shift+Z or Cmd+Shift+Z = Redo
+        e.preventDefault();
+        if (activeEditor === "left") {
+          redoLeft();
+        } else {
+          redoRight();
+        }
+      } else if (isCtrlOrCmd && e.key === 'z') {
+        // Ctrl+Z or Cmd+Z = Undo
+        e.preventDefault();
+        if (activeEditor === "left") {
+          undoLeft();
+        } else {
+          undoRight();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoLeft, redoLeft, undoRight, redoRight, activeEditor]);
+
+  // Parse for tree view
   const leftObject = useMemo(() => {
     if (!leftInput) return null;
     try {
@@ -435,6 +525,82 @@ const JsonBeautifier: React.FC = () => {
     }
   };
 
+  const handleOpenTransform = () => {
+    if (!leftObject) {
+      notifications.show({
+        title: "Invalid JSON",
+        message: "Left editor must contain valid JSON to transform",
+        color: "red",
+        icon: <AlertCircle size={16} />,
+      });
+      return;
+    }
+    setTransformOpened(true);
+  };
+
+  const handleTransformApply = (transformedData: any) => {
+    setRightInput(JSON.stringify(transformedData, null, 2));
+    setRightError("");
+    setRightViewMode("tree");
+  };
+
+  // Compare mode handlers
+  const handleToggleCompare = () => {
+    if (!compareMode) {
+      // Enabling compare mode - calculate diffs
+      if (leftObject && rightObject) {
+        const differences = calculateDiff(leftObject, rightObject);
+        setDiffs(differences);
+        setCurrentDiffIndex(0);
+        setCompareMode(true);
+        
+        // Ensure both sides are in tree view for highlighting
+        if (leftViewMode !== "tree") setLeftViewMode("tree");
+        if (rightViewMode !== "tree") setRightViewMode("tree");
+      } else {
+        notifications.show({
+          title: "Cannot Compare",
+          message: "Both editors must contain valid JSON to compare",
+          color: "red",
+          icon: <AlertCircle size={16} />,
+        });
+      }
+    } else {
+      // Disabling compare mode
+      setCompareMode(false);
+      setDiffs([]);
+      setCurrentDiffIndex(0);
+    }
+  };
+
+  const navigateToDiff = (index: number) => {
+    setCurrentDiffIndex(index);
+    
+    // Scroll to the diff element in both panels
+    setTimeout(() => {
+      const diff = diffs[index];
+      if (diff) {
+        // Find all elements with this diff path (left and right panels)
+        const elements = document.querySelectorAll(`[data-diff-path="${diff.pathStr}"]`);
+        elements.forEach((element) => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+    }, 100);
+  };
+
+  const handlePrevDiff = () => {
+    if (currentDiffIndex > 0) {
+      navigateToDiff(currentDiffIndex - 1);
+    }
+  };
+
+  const handleNextDiff = () => {
+    if (currentDiffIndex < diffs.length - 1) {
+      navigateToDiff(currentDiffIndex + 1);
+    }
+  };
+
 const renderEditor = (
     side: "left" | "right",
     content: string,
@@ -556,48 +722,98 @@ const renderEditor = (
           >
             Full screen
           </Button>
+
+          {side === "left" && (
+            <Button
+              size="xs"
+              variant="filled"
+              color="violet"
+              leftSection={<Sparkles size={14} />}
+              onClick={handleOpenTransform}
+              disabled={!jsonObject}
+            >
+              Transform
+            </Button>
+          )}
         </Group>
 
         {/* View Mode Selector */}
-        <SegmentedControl
-          size="xs"
-          value={viewMode}
-          onChange={(val) => setViewMode(val as ViewMode)}
-          data={[
-            {
-              value: "text",
-              label: (
-                <Group gap={4} justify="center">
-                  <Type size={12} /> Text
-                </Group>
-              ),
-            },
-            {
-              value: "tree",
-              label: (
-                <Group gap={4} justify="center">
-                  <FileJson size={12} /> Tree
-                </Group>
-              ),
-            },
-            {
-              value: "code",
-              label: (
-                <Group gap={4} justify="center">
-                  <Code size={12} /> Code
-                </Group>
-              ),
-            },
-            {
-              value: "table",
-              label: (
-                <Group gap={4} justify="center">
-                  <Table size={12} /> Table
-                </Group>
-              ),
-            },
-          ]}
-        />
+        <Group gap="xs" wrap="nowrap">
+          <SegmentedControl
+            size="xs"
+            value={viewMode}
+            onChange={(val) => setViewMode(val as ViewMode)}
+            data={[
+              {
+                value: "text",
+                label: (
+                  <Group gap={4} justify="center">
+                    <Type size={12} /> Text
+                  </Group>
+                ),
+              },
+              {
+                value: "tree",
+                label: (
+                  <Group gap={4} justify="center">
+                    <FileJson size={12} /> Tree
+                  </Group>
+                ),
+              },
+            ]}
+            className="!w-50"
+          />
+          {viewMode === "tree" && (
+            <>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  if (side === "left") setLeftExpandAll(true);
+                  else setRightExpandAll(true);
+                }}
+                title="Expand all"
+              >
+                <ChevronsUpDown size={14} />
+              </Button>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  if (side === "left") setLeftExpandAll(false);
+                  else setRightExpandAll(false);
+                }}
+                title="Collapse all"
+              >
+                <ChevronsDownUp size={14} />
+              </Button>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  if (side === "left") undoLeft();
+                  else undoRight();
+                }}
+                disabled={side === "left" ? !canUndoLeft : !canUndoRight}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo size={14} />
+              </Button>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  if (side === "left") redoLeft();
+                  else redoRight();
+                }}
+                disabled={side === "left" ? !canRedoLeft : !canRedoRight}
+                title="Redo (Ctrl+Shift+Z)"
+              >
+                <Redo size={14} />
+              </Button>
+            </>
+          )}
+        </Group>
 
         {/* Editor Area */}
         <div className="flex-1 relative border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-[#151b28] overflow-hidden">
@@ -609,6 +825,7 @@ const renderEditor = (
                 <div className="h-full overflow-auto custom-scrollbar">
                   <JsonTree
                     data={jsonObject}
+                    expandAll={side === "left" ? leftExpandAll : rightExpandAll}
                     onEdit={(path, newValue) => {
                       // Handle root-level update (for key renaming)
                       if (path.length === 0) {
@@ -630,13 +847,10 @@ const renderEditor = (
                       for (let i = 0; i < path.length - 1; i++) {
                         current = current[path[i]];
                       }
-                      if (path.length > 0) {
-                        const lastKey = path[path.length - 1];
-                        if (Array.isArray(current)) {
-                          current.splice(Number(lastKey), 1);
-                        } else {
-                          delete current[lastKey];
-                        }
+                      if (Array.isArray(current)) {
+                        current.splice(Number(path[path.length - 1]), 1);
+                      } else {
+                        delete current[path[path.length - 1]];
                       }
                       setContent(JSON.stringify(obj, null, 2));
                     }}
@@ -657,42 +871,45 @@ const renderEditor = (
                     onAdd={(path, type, index) => {
                       const obj = JSON.parse(content);
                       let current = obj;
-                      for (const key of path) {
-                        current = current[key];
+                      // Navigate to the target container
+                      for (let i = 0; i < path.length; i++) {
+                        current = current[path[i]];
                       }
 
-                      // Determine what to insert based on type
-                      let newItem;
-                      switch (type) {
-                        case "object":
-                          newItem = {};
-                          break;
-                        case "array":
-                          newItem = [];
-                          break;
-                        case "structure":
-                          newItem = { key: "value" };
-                          break;
-                        case "value":
-                        default:
-                          newItem = "";
-                          break;
-                      }
-
-                      // Insert into array or object
                       if (Array.isArray(current)) {
-                        if (typeof index === "number") {
-                          current.splice(index, 0, newItem);
+                        // Insert into array at specific index
+                        let defaultValue: any;
+                        if (type === "object") defaultValue = {};
+                        else if (type === "array") defaultValue = [];
+                        else if (type === "value") defaultValue = "new value";
+                        else if (type === "boolean") defaultValue = false;
+                        else if (type === "number") defaultValue = 0;
+                        else if (type === "null") defaultValue = null;
+                        else defaultValue = "";
+                        
+                        if (typeof index === 'number') {
+                          current.splice(index, 0, defaultValue);
                         } else {
-                          current.push(newItem);
+                          current.push(defaultValue);
                         }
-                      } else if (typeof current === "object") {
-                        const newKey = `new_key_${Object.keys(current).length}`;
-                        current[newKey] = newItem;
+                      } else {
+                        // Add to object
+                        let defaultValue: any;
+                        if (type === "object") defaultValue = {};
+                        else if (type === "array") defaultValue = [];
+                        else if (type === "value") defaultValue = "new value";
+                        else if (type === "boolean") defaultValue = false;
+                        else if (type === "number") defaultValue = 0;
+                        else if (type === "null") defaultValue = null;
+                        else defaultValue = "";
+                        const newKey = `newKey_${Date.now()}`; 
+                        current[newKey] = defaultValue;
                       }
-
                       setContent(JSON.stringify(obj, null, 2));
                     }}
+                    diffs={compareMode ? diffs : undefined}
+                    activeDiffPath={compareMode && diffs[currentDiffIndex] ? diffs[currentDiffIndex].pathStr : undefined}
+                    isLeft={side === "left"}
                     onCut={(path) => {
                       const obj = JSON.parse(content);
                       let current = obj;
@@ -766,46 +983,7 @@ const renderEditor = (
                 </pre>
               )}
 
-              {viewMode === "table" && Array.isArray(jsonObject) && (
-                <div className="h-full overflow-auto p-4 custom-scrollbar">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b dark:border-slate-700">
-                        {Object.keys(jsonObject[0] || {}).map((key) => (
-                          <th
-                            key={key}
-                            className="text-left p-2 font-semibold bg-slate-100 dark:bg-slate-800"
-                          >
-                            {key}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jsonObject.map((row: any, idx: number) => (
-                        <tr
-                          key={idx}
-                          className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        >
-                          {Object.values(row).map((val: any, i: number) => (
-                            <td key={i} className="p-2">
-                              {typeof val === "object"
-                                ? JSON.stringify(val)
-                                : String(val)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
 
-              {viewMode === "table" && !Array.isArray(jsonObject) && (
-                <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
-                  Table view only works with JSON arrays
-                </div>
-              )}
 
               {!jsonObject && viewMode !== "text" && (
                 <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
@@ -841,9 +1019,9 @@ const renderEditor = (
       <div className="flex justify-between items-center shrink-0 flex-wrap gap-4">
         <div className="prose dark:prose-invert">
           <h3 className="text-slate-900 dark:text-white m-0">JSON Editor</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm m-0">
+          {/* <p className="text-slate-500 dark:text-slate-400 text-sm m-0">
             Validate, beautify, compare, and edit JSON data
-          </p>
+          </p> */}
         </div>
         <Group>
           <Button
@@ -860,8 +1038,14 @@ const renderEditor = (
       {/* Main Editor Grid - Full Width */}
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-[1fr_auto_1fr] gap-4 min-h-0">
         {/* Left Editor */}
-        <Paper p="sm" withBorder className="min-h-0 flex flex-col dark:bg-slate-800! dark:border-slate-700!">
-          <EditableDocName value={leftDocName} onChange={setLeftDocName} />
+        <Paper 
+          p="sm" 
+          withBorder 
+          className="min-h-0 flex flex-col dark:bg-slate-800! dark:border-slate-700!" 
+          data-editor="left"
+          onClick={() => setActiveEditor("left")}
+        >
+          <EditableDocName value={leftDocName} onChange={setLeftDocName} showSaved={showLeftSaved} />
           {renderEditor(
             "left",
             leftInput,
@@ -897,7 +1081,7 @@ const renderEditor = (
           <Divider />
           <Button
             size="xs"
-            variant="light"
+            variant="outline"
             onClick={() => handleBeautify("left")}
             leftSection={<AlignLeft size={14} />}
             disabled={!leftInput}
@@ -906,18 +1090,58 @@ const renderEditor = (
           </Button>
           <Button
             size="xs"
-            variant="light"
-            onClick={handleCompare}
+            variant="outline"
+            onClick={handleToggleCompare}
             leftSection={<GitCompare size={14} />}
             disabled={!leftInput || !rightInput}
           >
-            Compare
+            {compareMode ? "Exit Compare" : "Compare"}
           </Button>
+
+          {compareMode && (
+            <Paper p="xs" withBorder className="flex flex-col gap-2 items-center bg-slate-50 dark:bg-slate-900 w-full mt-2">
+              <Group gap={4}>
+                <Badge size="sm" variant="filled" color={diffs.length > 0 ? "orange" : "gray"}>
+                  {diffs.length} diffs
+                </Badge>
+              </Group>
+              
+              <Group gap={4}>
+                <ActionIcon 
+                  size="sm" 
+                  variant="default" 
+                  onClick={handlePrevDiff}
+                  disabled={diffs.length === 0 || currentDiffIndex <= 0}
+                  title="Previous difference"
+                >
+                  <ChevronUp size={14} />
+                </ActionIcon>
+                <Text size="xs" c="dimmed" w={40} ta="center">
+                  {diffs.length > 0 ? `${currentDiffIndex + 1}/${diffs.length}` : "0/0"}
+                </Text>
+                <ActionIcon 
+                  size="sm" 
+                  variant="default" 
+                  onClick={handleNextDiff}
+                  disabled={diffs.length === 0 || currentDiffIndex >= diffs.length - 1}
+                  title="Next difference"
+                >
+                  <ChevronDown size={14} />
+                </ActionIcon>
+              </Group>
+            </Paper>
+          )}
         </div>
 
         {/* Right Editor */}
-        <Paper p="sm" withBorder className="min-h-0 flex flex-col dark:bg-slate-800! dark:border-slate-700!">
-          <EditableDocName value={rightDocName} onChange={setRightDocName} />
+        <Paper 
+          p="sm" 
+          withBorder 
+          className="min-h-0 flex flex-col dark:bg-slate-800! dark:border-slate-700!" 
+          data-editor="right"
+          onClick={() => setActiveEditor("right")}
+        >
+          <EditableDocName value={rightDocName} onChange={setRightDocName} showSaved={showRightSaved} />
           {renderEditor(
             "right",
             rightInput,
@@ -1014,6 +1238,14 @@ const renderEditor = (
             )}
         </div>
       </Modal>
+
+      {/* Transform Modal */}
+      <TransformModal
+        opened={transformOpened}
+        onClose={() => setTransformOpened(false)}
+        originalData={leftObject}
+        onTransform={handleTransformApply}
+      />
     </div>
   );
 };

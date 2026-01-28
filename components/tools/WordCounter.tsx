@@ -70,7 +70,7 @@ const WordCounter: React.FC = () => {
               p="md"
               radius="md"
               withBorder
-              className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 min-h-[100px]"
+              className="bg-white dark:bg-slate-800! border-slate-200! dark:border-slate-700! min-h-[100px]"
             >
               <Group gap="xs" mb={4} c="dimmed">
                 {stat.icon}
